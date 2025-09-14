@@ -4,84 +4,70 @@
   <meta charset="UTF-8">
   <title>home_family</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <!-- Supabase SDK -->
   <script src="https://unpkg.com/@supabase/supabase-js"></script>
-
   <style>
     body {
-      font-family: "Cairo", sans-serif;
-      background: linear-gradient(135deg, #f0f4f8, #d9e4f5);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f7fa;
       margin: 0;
       padding: 0;
     }
     header {
-      background: linear-gradient(90deg, #1e40af, #1e3a8a);
+      background: #1e40af;
       color: white;
-      padding: 20px;
-      text-align: center;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     header h1 { margin: 0; font-size: 22px; }
-    header span { display: block; font-size: 15px; margin-top: 6px; font-weight: bold; }
+    header span { font-size: 16px; font-weight: bold; }
     main {
-      max-width: 1000px;
-      margin: 25px auto;
-      padding: 25px;
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
-    h2 { color: #1e3a8a; border-right: 5px solid #1e40af; padding-right: 10px; }
+    .hidden { display: none; }
+    h2 { color: #1e40af; }
     form { margin: 15px 0; }
     input, button {
       padding: 12px;
-      margin: 8px 0;
+      margin: 6px 0;
       border: 1px solid #ccc;
-      border-radius: 8px;
+      border-radius: 6px;
       width: 100%;
       font-size: 15px;
-    }
-    input:focus {
-      border-color: #1e40af;
-      outline: none;
-      box-shadow: 0 0 6px rgba(30,64,175,0.3);
     }
     button {
       background: #1e40af;
       color: white;
       cursor: pointer;
       font-weight: bold;
+      transition: 0.3s;
     }
-    button:hover { background: #162d7a; }
-    .hidden { display: none; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    }
-    th, td { padding: 12px; text-align: center; border-bottom: 1px solid #eee; }
-    th { background: #f8fafc; color: #1e3a8a; }
-    tr:hover { background: #f1f5f9; }
-    .error { color: #dc2626; font-weight: bold; }
-    .success { color: #16a34a; font-weight: bold; }
-    #registerBtn { background: #059669; }
-    #registerBtn:hover { background: #047857; }
+    button:hover { background: #1e3a8a; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    table, th, td { border: 1px solid #ccc; }
+    th, td { padding: 10px; text-align: center; }
+    th { background: #f1f5f9; }
+    .error { color: red; margin: 10px 0; font-weight: bold; }
+    .success { color: green; margin: 10px 0; font-weight: bold; }
   </style>
 </head>
 <body>
   <header>
-    <h1>📌 home_family</h1>
+    <h1>home_family</h1>
     <span id="currentUser"></span>
   </header>
 
   <main>
     <!-- تسجيل الدخول -->
     <section id="loginSection">
-      <h2>🔑 تسجيل الدخول</h2>
+      <h2>تسجيل الدخول</h2>
       <form id="loginForm">
         <input type="text" id="loginUsername" placeholder="اسم المستخدم" required>
         <input type="password" id="loginPassword" placeholder="كلمة المرور" required>
@@ -92,15 +78,15 @@
 
     <!-- الأدمن -->
     <section id="adminSection" class="hidden">
-      <h2>⚙️ لوحة التحكم (أدمن)</h2>
+      <h2>لوحة التحكم (أدمن)</h2>
       <form id="addUserForm">
         <input type="text" id="newUsername" placeholder="اسم المستخدم الجديد" required>
         <input type="password" id="newPassword" placeholder="كلمة المرور" required>
-        <button type="submit">➕ إضافة مستخدم</button>
+        <button type="submit">إضافة مستخدم</button>
       </form>
       <div id="addUserMessage"></div>
 
-      <h3>📋 المستخدمون</h3>
+      <h3>المستخدمون</h3>
       <table id="usersTable">
         <thead>
           <tr><th>المعرف</th><th>اسم المستخدم</th><th>الدور</th><th>تاريخ الإنشاء</th><th>إجراء</th></tr>
@@ -109,7 +95,177 @@
       </table>
     </section>
 
-    <!-- الجدول -->
+    <!-- المستخدم -->
+    <section id="scheduleSection" class="hidden">
+      <h2>جدول التسجيل</h2>
+      <div id="todayInfo"></div>
+      <button id="registerBtn">تسجيل حضوري اليوم</button>
+      <div id="registerMessage"></div>
+
+      <h3>تغيير كلمة المرور</h3>
+      <form id="changePasswordForm">
+        <input type="password" id="oldPassword" placeholder="كلمة المرور القديمة" required>
+        <input type="password" id="newPasswordUser" placeholder="كلمة المرور الجديدة" required>
+        <button type="submit">تغيير كلمة المرور</button>
+      </form>
+      <div id="changePasswordMessage"></div>
+
+      <table id="scheduleTable">
+        <thead>
+          <tr><th>اليوم</th><th>المستخدم</th><th>تم التسجيل؟</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    const supabaseUrl = "https://rupucszdcrynlpcgvwlg.supabase.co";
+    const supabaseKey = "YOUR_SUPABASE_KEY"; // حط المفتاح هنا
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    let currentUser = null;
+
+    const loginSection = document.getElementById("loginSection");
+    const adminSection = document.getElementById("adminSection");
+    const scheduleSection = document.getElementById("scheduleSection");
+    const currentUserSpan = document.getElementById("currentUser");
+
+    // تسجيل الدخول
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("loginUsername").value.trim();
+      const password = document.getElementById("loginPassword").value.trim();
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("username", username)
+        .eq("password", password)
+        .maybeSingle();
+
+      if (error || !data) {
+        document.getElementById("loginMessage").innerHTML = '<p class="error">اسم المستخدم أو كلمة المرور غير صحيحة</p>';
+        return;
+      }
+
+      currentUser = data;
+      currentUserSpan.textContent = `مرحباً، ${currentUser.username}`;
+      loginSection.classList.add("hidden");
+
+      if (currentUser.role === "admin") {
+        loadUsers();
+        adminSection.classList.remove("hidden");
+      } else {
+        loadSchedule();
+        scheduleSection.classList.remove("hidden");
+      }
+    });
+
+    // إضافة مستخدم (أدمن)
+    document.getElementById("addUserForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("newUsername").value.trim();
+      const password = document.getElementById("newPassword").value.trim();
+
+      const { error } = await supabase.from("users").insert([{ username, password, role: "user" }]);
+      document.getElementById("addUserMessage").innerHTML = error ? '<p class="error">خطأ في الإضافة</p>' : '<p class="success">تمت إضافة المستخدم</p>';
+      if (!error) loadUsers();
+    });
+
+    // تحميل المستخدمين
+    async function loadUsers() {
+      const { data } = await supabase.from("users").select("*").order("created_at");
+      const tbody = document.querySelector("#usersTable tbody");
+      tbody.innerHTML = "";
+      data.forEach(u => {
+        if (u.role === "admin") {
+          tbody.innerHTML += `<tr><td>${u.id}</td><td>${u.username}</td><td>${u.role}</td><td>${u.created_at}</td><td>❌</td></tr>`;
+        } else {
+          tbody.innerHTML += `<tr>
+            <td>${u.id}</td><td>${u.username}</td><td>${u.role}</td><td>${u.created_at}</td>
+            <td><button onclick="deleteUser('${u.id}')">حذف</button></td>
+          </tr>`;
+        }
+      });
+    }
+
+    // حذف مستخدم
+    async function deleteUser(userId) {
+      if (!confirm("هل أنت متأكد؟")) return;
+      await supabase.from("users").delete().eq("id", userId);
+      loadUsers();
+    }
+
+    // تحميل الجدول
+    async function loadSchedule() {
+      const today = new Date().toISOString().split("T")[0];
+      document.getElementById("todayInfo").textContent = `تاريخ اليوم: ${today}`;
+
+      const { data: users } = await supabase.from("users").select("*").neq("role", "admin").order("created_at");
+      const { data: regs } = await supabase.from("registrations").select("*");
+
+      const tbody = document.querySelector("#scheduleTable tbody");
+      tbody.innerHTML = "";
+
+      if (users) {
+        const startDay = new Date().getDate();
+        const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+
+        for (let day = startDay; day <= daysInMonth; day++) {
+          const user = users[(day - startDay) % users.length];
+          const dateStr = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const reg = regs.find(r => r.user_id === user.id && r.registered_on === dateStr);
+
+          tbody.innerHTML += `<tr>
+            <td>${dateStr}</td><td>${user.username}</td><td>${reg ? "✔️" : "❌"}</td>
+          </tr>`;
+        }
+      }
+    }
+
+    // تسجيل حضور
+    document.getElementById("registerBtn").addEventListener("click", async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const { data: existing } = await supabase
+        .from("registrations")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .eq("registered_on", today)
+        .maybeSingle();
+
+      if (existing) {
+        document.getElementById("registerMessage").innerHTML = '<p class="error">سجلت بالفعل اليوم</p>';
+        return;
+      }
+
+      const { error } = await supabase.from("registrations").insert([{ user_id: currentUser.id, registered_on: today }]);
+      document.getElementById("registerMessage").innerHTML = error ? '<p class="error">خطأ في التسجيل</p>' : '<p class="success">تم التسجيل بنجاح</p>';
+      if (!error) loadSchedule();
+    });
+
+    // تغيير كلمة المرور
+    document.getElementById("changePasswordForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const oldPass = document.getElementById("oldPassword").value.trim();
+      const newPass = document.getElementById("newPasswordUser").value.trim();
+
+      if (oldPass !== currentUser.password) {
+        document.getElementById("changePasswordMessage").innerHTML = '<p class="error">كلمة المرور القديمة غير صحيحة</p>';
+        return;
+      }
+
+      const { error } = await supabase.from("users").update({ password: newPass }).eq("id", currentUser.id);
+      if (error) {
+        document.getElementById("changePasswordMessage").innerHTML = '<p class="error">خطأ أثناء تغيير كلمة المرور</p>';
+      } else {
+        currentUser.password = newPass;
+        document.getElementById("changePasswordMessage").innerHTML = '<p class="success">تم تغيير كلمة المرور بنجاح</p>';
+      }
+    });
+  </script>
+</body>
+</html>    <!-- الجدول -->
     <section id="scheduleSection" class="hidden">
       <h2>📅 جدول التسجيل</h2>
       <div id="todayInfo"></div>
