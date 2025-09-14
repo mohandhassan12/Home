@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>Home Scheduler</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Supabase SDK -->
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
+
+  <!-- CSS -->
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      padding: 0;
+      direction: rtl;
+    }
+    header {
+      background: #1e40af;
+      color: white;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+    header span {
+      font-size: 16px;
+      font-weight: bold;
+    }
+    main {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .hidden { display: none; }
+    form {
+      margin: 15px 0;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      width: 100%;
+      font-size: 14px;
+    }
+    button {
+      background: #1e40af;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #1e3a8a;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th, td {
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background: #f1f5f9;
+    }
+    .error {
+      color: red;
+      margin: 10px 0;
+    }
+    .success {
+      color: green;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Home Scheduler</h1>
+    <span id="currentUser"></span>
+  </header>
+
+  <main>
+    <!-- صفحة تسجيل الدخول -->
+    <section id="loginSection">
+      <h2>تسجيل الدخول</h2>
+      <form id="loginForm">
+        <input type="text" id="loginUsername" placeholder="اسم المستخدم" required>
+        <input type="password" id="loginPassword" placeholder="كلمة المرور" required>
+        <button type="submit">دخول</button>
+      </form>
+      <div id="loginMessage"></div>
+    </section>
+
+    <!-- صفحة الأدمن -->
+    <section id="adminSection" class="hidden">
+      <h2>لوحة التحكم (أدمن)</h2>
+      <form id="addUserForm">
+        <input type="text" id="newUsername" placeholder="اسم المستخدم الجديد" required>
+        <input type="password" id="newPassword" placeholder="كلمة المرور" required>
+        <button type="submit">إضافة مستخدم</button>
+      </form>
+      <div id="addUserMessage"></div>
+
+      <h3>المستخدمون</h3>
+      <table id="usersTable">
+        <thead>
+          <tr><th>المعرف</th><th>اسم المستخدم</th><th>تاريخ الإنشاء</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- صفحة الجدول -->
+    <section id="scheduleSection" class="hidden">
+      <h2>جدول التسجيل</h2>
+      <div id="todayInfo"></div>
+      <button id="registerBtn">تسجيل حضوري اليوم</button>
+      <div id="registerMessage"></div>
+
+      <table id="scheduleTable">
+        <thead>
+          <tr><th>اليوم</th><th>المستخدم</th><th>تم التسجيل؟</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- JS -->
+  <script>
+    const supabaseUrl = "https://rupucszdcrynlpcgvwlg.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ1cHVjc3pkY3J5bmxwY2d2d2xnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4MTUxNzgsImV4cCI6MjA3MzM5MTE3OH0.e0T_BHYxj0ECN_1f2ECBKTjDXn83Mm16Ds6Wutd--ZU";
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    let currentUser = null;
+
+    const loginSection = document.getElementById("loginSection");
+    const adminSection = document.getElementById("adminSection");
+    const scheduleSection = document.getElementById("scheduleSection");
+    const currentUserSpan = document.getElementById("currentUser");
+
+    // تسجيل الدخول
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("loginUsername").value.trim();
+      const password = document.getElementById("loginPassword").value.trim();
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("username", username)
+        .eq("password", password)
+        .single();
+
+      if (error || !data) {
+        document.getElementById("loginMessage").innerHTML = '<p class="error">خطأ في تسجيل الدخول</p>';
+      } else {
+        currentUser = data;
+        currentUserSpan.textContent = `مرحباً، ${currentUser.username}`;
+        loginSection.classList.add("hidden");
+
+        if (username === "Admin") {
+          loadUsers();
+          adminSection.classList.remove("hidden");
+        } else {
+          loadSchedule();
+          scheduleSection.classList.remove("hidden");
+        }
+      }
+    });
+
+    // إضافة مستخدم جديد (أدمن فقط)
+    document.getElementById("addUserForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("newUsername").value.trim();
+      const password = document.getElementById("newPassword").value.trim();
+
+      const { error } = await supabase.from("users").insert([{ username, password }]);
+
+      if (error) {
+        document.getElementById("addUserMessage").innerHTML = '<p class="error">خطأ في الإضافة</p>';
+      } else {
+        document.getElementById("addUserMessage").innerHTML = '<p class="success">تمت إضافة المستخدم</p>';
+        loadUsers();
+      }
+    });
+
+    // تحميل جدول المستخدمين
+    async function loadUsers() {
+      const { data, error } = await supabase.from("users").select("*").order("id");
+      if (!error) {
+        const tbody = document.querySelector("#usersTable tbody");
+        tbody.innerHTML = "";
+        data.forEach(u => {
+          tbody.innerHTML += `<tr><td>${u.id}</td><td>${u.username}</td><td>${u.created_at}</td></tr>`;
+        });
+      }
+    }
+
+    // تحميل الجدول للمستخدم
+    async function loadSchedule() {
+      const today = new Date().toISOString().split("T")[0];
+      document.getElementById("todayInfo").textContent = `تاريخ اليوم: ${today}`;
+
+      const { data: users } = await supabase.from("users").select("*").order("id");
+      const { data: regs } = await supabase.from("registrations").select("*");
+
+      const tbody = document.querySelector("#scheduleTable tbody");
+      tbody.innerHTML = "";
+
+      if (users) {
+        const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const user = users[(day - 1) % users.length];
+          const dateStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+
+          const reg = regs.find(r => r.user_id === user.id && r.registered_on === dateStr);
+
+          tbody.innerHTML += `<tr>
+            <td>${dateStr}</td>
+            <td>${user.username}</td>
+            <td>${reg ? "✔️" : "❌"}</td>
+          </tr>`;
+        }
+      }
+    }
+
+    // تسجيل الحضور
+    document.getElementById("registerBtn").addEventListener("click", async () => {
+      const today = new Date().toISOString().split("T")[0];
+
+      const { data: existing } = await supabase
+        .from("registrations")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .eq("registered_on", today)
+        .single();
+
+      if (existing) {
+        document.getElementById("registerMessage").innerHTML = '<p class="error">لقد سجلت بالفعل اليوم</p>';
+        return;
+      }
+
+      const { error } = await supabase.from("registrations").insert([
+        { user_id: currentUser.id, registered_on: today }
+      ]);
+
+      if (error) {
+        document.getElementById("registerMessage").innerHTML = '<p class="error">خطأ في التسجيل</p>';
+      } else {
+        document.getElementById("registerMessage").innerHTML = '<p class="success">تم التسجيل بنجاح</p>';
+        loadSchedule();
+      }
+    });
+  </script>
+</body>
+</html>
