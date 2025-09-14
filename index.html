@@ -2,7 +2,7 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>Home Scheduler</title>
+  <title>Data Cast Scheduler</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Supabase SDK -->
@@ -89,7 +89,7 @@
 </head>
 <body>
   <header>
-    <h1>Home Scheduler</h1>
+    <h1>Data Cast Scheduler</h1>
     <span id="currentUser"></span>
   </header>
 
@@ -118,7 +118,7 @@
       <h3>المستخدمون</h3>
       <table id="usersTable">
         <thead>
-          <tr><th>المعرف</th><th>اسم المستخدم</th><th>تاريخ الإنشاء</th></tr>
+          <tr><th>المعرف</th><th>اسم المستخدم</th><th>تاريخ الإنشاء</th><th>إجراء</th></tr>
         </thead>
         <tbody></tbody>
       </table>
@@ -141,32 +141,7 @@
   </main>
 
   <!-- JS -->
-  
   <script>
-    
-  async function ensureAdminUser() {
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("username", "Admin")
-      .single();
-
-    if (!data) {
-      // لو الأدمن مش موجود نعمله إدخال
-      const { error: insertError } = await supabase.from("users").insert([
-        { username: "Admin", password: "123456" }
-      ]);
-
-      if (insertError) {
-        console.error("خطأ في إنشاء الأدمن:", insertError);
-      } else {
-        console.log("تم إنشاء الأدمن بنجاح (username=Admin, password=123456)");
-      }
-    }
-  }
-
-  // ناديله أول ما الصفحة تفتح
-  ensureAdminUser();
     const supabaseUrl = "https://rupucszdcrynlpcgvwlg.supabase.co";
     const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ1cHVjc3pkY3J5bmxwY2d2d2xnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4MTUxNzgsImV4cCI6MjA3MzM5MTE3OH0.e0T_BHYxj0ECN_1f2ECBKTjDXn83Mm16Ds6Wutd--ZU";
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -189,10 +164,15 @@
         .select("*")
         .eq("username", username)
         .eq("password", password)
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
-        document.getElementById("loginMessage").innerHTML = '<p class="error">خطأ في تسجيل الدخول</p>';
+      if (error) {
+        document.getElementById("loginMessage").innerHTML = '<p class="error">حصل خطأ في الاتصال</p>';
+        return;
+      }
+
+      if (!data) {
+        document.getElementById("loginMessage").innerHTML = '<p class="error">اسم المستخدم أو كلمة المرور غير صحيحة</p>';
       } else {
         currentUser = data;
         currentUserSpan.textContent = `مرحباً، ${currentUser.username}`;
@@ -231,17 +211,45 @@
         const tbody = document.querySelector("#usersTable tbody");
         tbody.innerHTML = "";
         data.forEach(u => {
-          tbody.innerHTML += `<tr><td>${u.id}</td><td>${u.username}</td><td>${u.created_at}</td></tr>`;
+          if (u.username === "Admin") {
+            tbody.innerHTML += `<tr><td>${u.id}</td><td>${u.username}</td><td>${u.created_at}</td><td>❌</td></tr>`;
+          } else {
+            tbody.innerHTML += `<tr>
+              <td>${u.id}</td>
+              <td>${u.username}</td>
+              <td>${u.created_at}</td>
+              <td><button onclick="deleteUser(${u.id})">حذف</button></td>
+            </tr>`;
+          }
         });
       }
     }
 
-    // تحميل الجدول للمستخدم
+    // حذف مستخدم
+    async function deleteUser(userId) {
+      if (!confirm("هل أنت متأكد أنك تريد حذف هذا المستخدم؟")) return;
+
+      const { error } = await supabase.from("users").delete().eq("id", userId);
+
+      if (error) {
+        alert("خطأ في حذف المستخدم");
+      } else {
+        alert("تم حذف المستخدم بنجاح");
+        loadUsers();
+      }
+    }
+
+    // تحميل الجدول للمستخدم (بدون الأدمن)
     async function loadSchedule() {
       const today = new Date().toISOString().split("T")[0];
       document.getElementById("todayInfo").textContent = `تاريخ اليوم: ${today}`;
 
-      const { data: users } = await supabase.from("users").select("*").order("id");
+      const { data: users } = await supabase
+        .from("users")
+        .select("*")
+        .neq("username", "Admin")
+        .order("id");
+
       const { data: regs } = await supabase.from("registrations").select("*");
 
       const tbody = document.querySelector("#scheduleTable tbody");
@@ -274,7 +282,7 @@
         .select("*")
         .eq("user_id", currentUser.id)
         .eq("registered_on", today)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         document.getElementById("registerMessage").innerHTML = '<p class="error">لقد سجلت بالفعل اليوم</p>';
