@@ -5,6 +5,8 @@
   <title>📅 Home Family</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://unpkg.com/@supabase/supabase-js"></script>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     body { font-family: "Cairo", sans-serif; margin: 0; background: #f9fafb; }
     header { background: #1e3a8a; color: #fff; padding: 15px; text-align: center; }
@@ -12,56 +14,21 @@
     main { max-width: 900px; margin: 20px auto; padding: 20px; background: #fff;
       border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     input, button { padding: 10px; margin: 5px 0; width: 100%; border: 1px solid #ccc; border-radius: 6px; }
-    button { background: #1e40af; color: #fff; font-weight: bold; cursor: pointer; }
-    button:hover { background: #162d7a; }
+    button { background: #1e40af; color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    button:hover { background: #162d7a; transform: scale(1.05); }
     .hidden { display: none; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { border: 1px solid #eee; padding: 10px; text-align: center; }
-    th { background: #f1f5f9; }
+
+    /* جدول أنيق */
+    table { width: 100%; border-collapse: separate; border-spacing: 0 8px; margin-top: 15px; }
+    th, td { padding: 12px; text-align: center; border: none; }
+    th { background: #1e3a8a; color: #fff; border-radius: 8px; }
+    tr { background: #f8fafc; transition: 0.2s; }
+    tr:hover { background: #e2e8f0; }
+    td:first-child { border-radius: 8px 0 0 8px; }
+    td:last-child { border-radius: 0 8px 8px 0; }
+
     .eye { position: absolute; right: 10px; top: 35%; cursor: pointer; }
     .password-container { position: relative; }
-
-    /* إشعارات فقاعات مع أنيميشن */
-    .toast-container {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      z-index: 9999;
-    }
-    .toast {
-      min-width: 260px;
-      padding: 14px 18px;
-      border-radius: 14px;
-      color: #fff;
-      font-size: 15px;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      box-shadow: 0 6px 14px rgba(0,0,0,0.2);
-      animation: slideIn 0.6s ease, fadeOut 0.6s ease 3s forwards;
-      opacity: 0.95;
-      transform-origin: right;
-    }
-    .toast-icon {
-      font-size: 18px;
-      flex-shrink: 0;
-    }
-    .toast.success { background: linear-gradient(135deg,#16a34a,#22c55e); }
-    .toast.error { background: linear-gradient(135deg,#dc2626,#ef4444); }
-    .toast.warning { background: linear-gradient(135deg,#ca8a04,#facc15); color:#222; }
-    .toast.info { background: linear-gradient(135deg,#2563eb,#3b82f6); }
-
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateX(120%) scale(0.9); }
-      to { opacity: 1; transform: translateX(0) scale(1); }
-    }
-    @keyframes fadeOut {
-      to { opacity: 0; transform: translateX(120%) scale(0.9); }
-    }
   </style>
 </head>
 <body>
@@ -112,9 +79,6 @@
     </section>
   </main>
 
-  <!-- مكان التوست -->
-  <div class="toast-container" id="toastContainer"></div>
-
   <script>
     const supabaseUrl = "https://csvwgvoubtrferlotzhm.supabase.co";
     const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNzdndndm91YnRyZmVybG90emhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4MjQ5ODQsImV4cCI6MjA3MzQwMDk4NH0.afY7eUMkrj6_-l5yHq1UwM5OXdfz1hf1oxJYo2ccKmU";
@@ -128,41 +92,23 @@
     const scheduleSection = document.getElementById("scheduleSection");
     const currentUserSpan = document.getElementById("currentUser");
 
-    // نظام التوست
-    function showToast(msg, type="info") {
-      const icons = {
-        success: "✅",
-        error: "❌",
-        warning: "⚠️",
-        info: "ℹ️"
-      };
-
-      const container = document.getElementById("toastContainer");
-      const toast = document.createElement("div");
-      toast.className = `toast ${type}`;
-
-      const icon = document.createElement("span");
-      icon.className = "toast-icon";
-      icon.textContent = icons[type] || "ℹ️";
-
-      const text = document.createElement("span");
-      text.textContent = msg;
-
-      toast.appendChild(icon);
-      toast.appendChild(text);
-
-      container.appendChild(toast);
-
-      setTimeout(() => { toast.remove(); }, 3600);
+    // SweetAlert2 رسالة منسقة
+    function showAlert(msg, type="info") {
+      const icons = { success: "success", error: "error", warning: "warning", info: "info" };
+      Swal.fire({
+        text: msg,
+        icon: icons[type] || "info",
+        confirmButtonText: "تمام ✅",
+        confirmButtonColor: "#1e40af",
+        showClass: { popup: "animate__animated animate__fadeInDown" },
+        hideClass: { popup: "animate__animated animate__fadeOutUp" }
+      });
     }
 
     function togglePassword(id, el) {
       const input = document.getElementById(id);
-      if (input.type === "password") {
-        input.type = "text"; el.textContent = "🙈";
-      } else {
-        input.type = "password"; el.textContent = "👁";
-      }
+      if (input.type === "password") { input.type = "text"; el.textContent = "🙈"; }
+      else { input.type = "password"; el.textContent = "👁"; }
     }
 
     // تسجيل الدخول
@@ -174,12 +120,12 @@
       const { data, error } = await supabase.from("users")
         .select("*").eq("username", username).eq("password", password).maybeSingle();
 
-      if (error || !data) return showToast("❌ اسم المستخدم أو كلمة المرور غير صحيحة", "error");
+      if (error || !data) return showAlert("❌ اسم المستخدم أو كلمة المرور غير صحيحة", "error");
 
       currentUser = data;
       currentUserSpan.textContent = `مرحباً ${currentUser.username}`;
       loginSection.classList.add("hidden");
-      showToast("✅ تم تسجيل الدخول بنجاح", "success");
+      showAlert("✅ تم تسجيل الدخول بنجاح", "success");
 
       if (currentUser.role === "admin") {
         loadUsers();
@@ -196,8 +142,8 @@
       const username = document.getElementById("newUsername").value.trim();
       const password = document.getElementById("newPassword").value.trim();
       const { error } = await supabase.from("users").insert([{ username, password, role: "user" }]);
-      if (error) showToast("❌ خطأ أثناء إضافة المستخدم", "error"); 
-      else { showToast("✅ تمت إضافة المستخدم بنجاح", "success"); loadUsers(); }
+      if (error) showAlert("❌ خطأ أثناء إضافة المستخدم", "error"); 
+      else { showAlert("✅ تمت إضافة المستخدم بنجاح", "success"); loadUsers(); }
     });
 
     async function loadUsers() {
@@ -214,7 +160,7 @@
 
     async function deleteUser(userId) {
       await supabase.from("users").delete().eq("id", userId);
-      showToast("🗑 تم حذف المستخدم", "info");
+      showAlert("🗑 تم حذف المستخدم", "info");
       loadUsers();
     }
 
@@ -259,21 +205,21 @@
 
       if (assignedUser.id !== currentUser.id) {
         warnings++;
-        if (warnings === 1) showToast("⚠️ مش معادك للتسجيل", "warning");
-        else if (warnings === 2) showToast("😅 بقولك مش معادك!", "warning");
-        else if (warnings === 3) showToast("🤨 بطل لعب ده مش معادك", "error");
-        else showToast("😡 بقولك ده مش معادك يا ابن ***", "error");
+        if (warnings === 1) showAlert("⚠️ مش معادك للتسجيل", "warning");
+        else if (warnings === 2) showAlert("😅 بقولك مش معادك!", "warning");
+        else if (warnings === 3) showAlert("🤨 بطل لعب ده مش معادك", "error");
+        else showAlert("😡 بقولك ده مش معادك يا ابن ***", "error");
         return;
       }
 
       const { data: existing } = await supabase.from("registrations")
         .select("*").eq("user_id", currentUser.id).eq("registered_on", today).maybeSingle();
 
-      if (existing) return showToast("⚠️ تم تسجيل الحضور بالفعل", "warning");
+      if (existing) return showAlert("⚠️ تم تسجيل الحضور بالفعل", "warning");
 
       const { error } = await supabase.from("registrations").insert([{ user_id: currentUser.id, registered_on: today }]);
-      if (error) showToast("❌ خطأ أثناء التسجيل", "error"); 
-      else { showToast("✅ تم تسجيل حضورك اليوم", "success"); loadSchedule(); }
+      if (error) showAlert("❌ خطأ أثناء التسجيل", "error"); 
+      else { showAlert("✅ تم تسجيل حضورك اليوم", "success"); loadSchedule(); }
     });
 
     // تغيير كلمة المرور
@@ -282,11 +228,11 @@
       const oldPass = document.getElementById("oldPassword").value.trim();
       const newPass = document.getElementById("newPasswordChange").value.trim();
 
-      if (oldPass !== currentUser.password) return showToast("❌ كلمة المرور القديمة غير صحيحة", "error");
+      if (oldPass !== currentUser.password) return showAlert("❌ كلمة المرور القديمة غير صحيحة", "error");
 
       const { error } = await supabase.from("users").update({ password: newPass }).eq("id", currentUser.id);
-      if (error) showToast("❌ خطأ أثناء التغيير", "error"); 
-      else { showToast("✅ تم تغيير كلمة المرور بنجاح", "success"); currentUser.password = newPass; }
+      if (error) showAlert("❌ خطأ أثناء التغيير", "error"); 
+      else { showAlert("✅ تم تغيير كلمة المرور بنجاح", "success"); currentUser.password = newPass; }
     });
   </script>
 </body>
