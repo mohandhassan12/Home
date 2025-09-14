@@ -141,7 +141,32 @@
   </main>
 
   <!-- JS -->
+  
   <script>
+    
+  async function ensureAdminUser() {
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("username", "Admin")
+      .single();
+
+    if (!data) {
+      // لو الأدمن مش موجود نعمله إدخال
+      const { error: insertError } = await supabase.from("users").insert([
+        { username: "Admin", password: "123456" }
+      ]);
+
+      if (insertError) {
+        console.error("خطأ في إنشاء الأدمن:", insertError);
+      } else {
+        console.log("تم إنشاء الأدمن بنجاح (username=Admin, password=123456)");
+      }
+    }
+  }
+
+  // ناديله أول ما الصفحة تفتح
+  ensureAdminUser();
     const supabaseUrl = "https://rupucszdcrynlpcgvwlg.supabase.co";
     const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ1cHVjc3pkY3J5bmxwY2d2d2xnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4MTUxNzgsImV4cCI6MjA3MzM5MTE3OH0.e0T_BHYxj0ECN_1f2ECBKTjDXn83Mm16Ds6Wutd--ZU";
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
